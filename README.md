@@ -9,7 +9,7 @@ Nevertheless I think it's fun to look at. The team is definitely not slowing dow
 ## How to run
 
 Software required to run this script:
-- Bun (https://bun.sh/)
+- Bun JS (https://bun.sh/)
 - GitHub CLI (https://cli.github.com/)
 
 Environment Variables required:
