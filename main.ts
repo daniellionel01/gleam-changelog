@@ -41,6 +41,7 @@ for (const release of releases) {
 
   // v1.1.0 -> v1.1
   const version = release.name.slice(0, -2);
+
   const res = await fetch(`https://raw.githubusercontent.com/gleam-lang/gleam/refs/heads/main/changelog/${version}.md`);
   const changelog = await res.text();
 
@@ -59,22 +60,22 @@ for (const release of releases) {
   if (responseChangelog === null || responseChangelog === undefined) {
     throw new Error(`Could not parse changelog for ${release.name}`);
   }
+  console.log(responseChangelog);
 
-  const parsedFlattened = await openai.chat.completions.parse({
-    model: "gpt-5-mini",
-    messages: [
-      {
-        role: "system",
-        content: `Structure the changelog for the following version: ${release.name}. This includes RCs and patches but not previous versions. Attribute the section for bugfixes to the other sections so we know what has been worked on with more detail, so that bug_fixes is 0 in your output.`,
-      },
-      { role: "user", content: changelog },
-    ],
-    response_format: zodResponseFormat(changelogSchema, "changelog"),
-  });
-  const responseFlattened = parsedFlattened.choices[0]?.message.parsed;
-  if (responseFlattened === null || responseFlattened === undefined) {
-    throw new Error(`Could not parse flattened changelog for ${release.name}`);
-  }
-
-  console.log(responseFlattened);
+  // const parsedFlattened = await openai.chat.completions.parse({
+  //   model: "gpt-5-mini",
+  //   messages: [
+  //     {
+  //       role: "system",
+  //       content: `Structure the changelog for the following version: ${release.name}. This includes RCs and patches but not previous versions. Attribute the section for bugfixes to the other sections so we know what has been worked on with more detail, so that bug_fixes is 0 in your output.`,
+  //     },
+  //     { role: "user", content: changelog },
+  //   ],
+  //   response_format: zodResponseFormat(changelogSchema, "changelog"),
+  // });
+  // const responseFlattened = parsedFlattened.choices[0]?.message.parsed;
+  // if (responseFlattened === null || responseFlattened === undefined) {
+  //   throw new Error(`Could not parse flattened changelog for ${release.name}`);
+  // }
+  // console.log(responseFlattened);
 }
