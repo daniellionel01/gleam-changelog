@@ -12,15 +12,12 @@ Software required to run this script:
 - Bun JS (https://bun.sh/)
 - GitHub CLI (https://cli.github.com/)
 
-Environment Variables required:
-- OPENAI_API_KEY
-
 ```sh
 $ bun install
 $ bun run main.ts
 ```
 
-## GPT Prompt for Visualisation
+## Visualisation Prompt
 ```md
 Visualise the changelog item amounts for each category for each release as two charts
 - A stacked bar chart with each release broken down by the category (oldest to latest from left to right)
@@ -42,14 +39,14 @@ Here are the colors for each category:
 {
   release: "v1.14.0",
   compiler: 15,
-  formatter: 27,
-  bug_fixes: 4,
+  formatter: 0,
+  bug_fixes: 31,
   build_tool: 7,
   language_server: 11,
 }
 {
   release: "v1.13.0",
-  compiler: 16,
+  compiler: 17,
   formatter: 4,
   bug_fixes: 32,
   build_tool: 7,
@@ -57,16 +54,16 @@ Here are the colors for each category:
 }
 {
   release: "v1.12.0",
-  compiler: 18,
+  compiler: 19,
   formatter: 5,
   bug_fixes: 23,
-  build_tool: 7,
+  build_tool: 15,
   language_server: 4,
 }
 {
   release: "v1.11.0",
   compiler: 16,
-  formatter: 1,
+  formatter: 2,
   bug_fixes: 37,
   build_tool: 9,
   language_server: 9,
@@ -74,9 +71,9 @@ Here are the colors for each category:
 {
   release: "v1.10.0",
   compiler: 13,
-  formatter: 0,
+  formatter: 1,
   bug_fixes: 17,
-  build_tool: 6,
+  build_tool: 8,
   language_server: 12,
 }
 {
@@ -98,7 +95,7 @@ Here are the colors for each category:
 {
   release: "v1.7.0",
   compiler: 12,
-  formatter: 4,
+  formatter: 5,
   bug_fixes: 20,
   build_tool: 8,
   language_server: 8,
@@ -113,7 +110,7 @@ Here are the colors for each category:
 }
 {
   release: "v1.5.0",
-  compiler: 15,
+  compiler: 17,
   formatter: 1,
   bug_fixes: 18,
   build_tool: 8,
@@ -121,27 +118,27 @@ Here are the colors for each category:
 }
 {
   release: "v1.4.0",
-  compiler: 19,
-  formatter: 3,
-  bug_fixes: 0,
+  compiler: 13,
+  formatter: 1,
+  bug_fixes: 9,
   build_tool: 2,
-  language_server: 11,
+  language_server: 10,
 }
 {
   release: "v1.3.0",
-  compiler: 12,
-  formatter: 2,
-  bug_fixes: 10,
+  compiler: 14,
+  formatter: 1,
+  bug_fixes: 8,
   build_tool: 2,
   language_server: 6,
 }
 {
   release: "v1.2.0",
-  compiler: 14,
-  formatter: 10,
+  compiler: 13,
+  formatter: 5,
   bug_fixes: 23,
-  build_tool: 6,
-  language_server: 12,
+  build_tool: 12,
+  language_server: 10,
 }
 {
   release: "v1.1.0",
@@ -150,13 +147,5 @@ Here are the colors for each category:
   bug_fixes: 0,
   build_tool: 27,
   language_server: 5,
-}
-{
-  release: "v1.0.0",
-  compiler: 2,
-  formatter: 2,
-  bug_fixes: 5,
-  build_tool: 3,
-  language_server: 1,
 }
 ```

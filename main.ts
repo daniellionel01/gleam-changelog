@@ -1,14 +1,4 @@
 import { $ } from "bun";
-import OpenAI from "openai";
-import { zodResponseFormat } from "openai/helpers/zod";
-import z from "zod/v3";
-
-const apiKey = Bun.env["OPENAI_API_KEY"] ?? "";
-if (apiKey === "") {
-  throw new Error("OPENAI_API_KEY environment variable is missing");
-}
-
-const openai = new OpenAI({ apiKey });
 
 interface Release {
   createdAt: string;
@@ -20,62 +10,131 @@ interface Release {
   tagName: string;
 }
 
-const changelogSchema = z.object({
-  release: z.string(),
-  compiler: z.number(),
-  formatter: z.number(),
-  bug_fixes: z.number(),
-  build_tool: z.number(),
-  language_server: z.number(),
-});
-
-const releases: Release[] =
-  await $`gh release ls --json createdAt,isDraft,isLatest,isPrerelease,name,publishedAt,tagName --repo gleam-lang/gleam --limit 1000 --order desc`.json();
-
-for (const release of releases) {
-  if (!release.tagName.endsWith("0")) continue;
-  if (!release.tagName.startsWith("v1")) break;
-
-  // let's not get ratelimited by github
-  await Bun.sleep(500);
-
-  // v1.1.0 -> v1.1
-  const version = release.name.slice(0, -2);
-
-  const res = await fetch(`https://raw.githubusercontent.com/gleam-lang/gleam/refs/heads/main/changelog/${version}.md`);
-  const changelog = await res.text();
-
-  const parsedChangelog = await openai.chat.completions.parse({
-    model: "gpt-5-mini",
-    messages: [
-      {
-        role: "system",
-        content: `Structure the changelog for the following version: ${release.name}. This includes RCs and patches but not previous versions.`,
-      },
-      { role: "user", content: changelog },
-    ],
-    response_format: zodResponseFormat(changelogSchema, "changelog"),
-  });
-  const responseChangelog = parsedChangelog.choices[0]?.message.parsed;
-  if (responseChangelog === null || responseChangelog === undefined) {
-    throw new Error(`Could not parse changelog for ${release.name}`);
-  }
-  console.log(responseChangelog);
-
-  // const parsedFlattened = await openai.chat.completions.parse({
-  //   model: "gpt-5-mini",
-  //   messages: [
-  //     {
-  //       role: "system",
-  //       content: `Structure the changelog for the following version: ${release.name}. This includes RCs and patches but not previous versions. Attribute the section for bugfixes to the other sections so we know what has been worked on with more detail, so that bug_fixes is 0 in your output.`,
-  //     },
-  //     { role: "user", content: changelog },
-  //   ],
-  //   response_format: zodResponseFormat(changelogSchema, "changelog"),
-  // });
-  // const responseFlattened = parsedFlattened.choices[0]?.message.parsed;
-  // if (responseFlattened === null || responseFlattened === undefined) {
-  //   throw new Error(`Could not parse flattened changelog for ${release.name}`);
-  // }
-  // console.log(responseFlattened);
+interface ChangelogCounts {
+  release: string;
+  compiler: number;
+  formatter: number;
+  bug_fixes: number;
+  build_tool: number;
+  language_server: number;
 }
+
+function parseChangelog(changelog: string, targetBaseVersion: string): Record<string, number> {
+  const sections: Record<string, number> = {
+    compiler: 0,
+    formatter: 0,
+    bug_fixes: 0,
+    build_tool: 0,
+    language_server: 0,
+  };
+
+  const categoryToSection: Record<string, string> = {
+    compiler: "compiler",
+    formatter: "formatter",
+    bug_fixes: "bug_fixes",
+    build_tool: "build_tool",
+    language_server: "language_server",
+  };
+
+  const categoryPatterns: Record<string, RegExp> = {
+    compiler: /^###\s+Compiler$/i,
+    formatter: /^###\s+Formatter$/i,
+    bug_fixes: /^###\s+Bug fixes$/i,
+    build_tool: /^###\s+Build( tool)?( changes)?$/i,
+    language_server: /^###\s+Language[ ]Server( changes)?$/i,
+  };
+
+  const lines = changelog.split('\n');
+  let currentSection: string | null = null;
+  let inTargetVersion = false;
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+
+    const versionMatch = trimmedLine.match(/^## v?(\d+\.\d+)/);
+    if (versionMatch) {
+      const fileBaseVersion = versionMatch[1];
+      inTargetVersion = fileBaseVersion === targetBaseVersion;
+      currentSection = null;
+      continue;
+    }
+
+    if (!inTargetVersion) continue;
+
+    let matchedCategory: string | null = null;
+    for (const [category, pattern] of Object.entries(categoryPatterns)) {
+      if (pattern.test(trimmedLine)) {
+        matchedCategory = category;
+        break;
+      }
+    }
+
+    if (matchedCategory) {
+      currentSection = categoryToSection[matchedCategory] ?? null;
+      continue;
+    }
+
+    if (currentSection && trimmedLine.startsWith('- ')) {
+      sections[currentSection] = (sections[currentSection] ?? 0) + 1;
+    }
+  }
+
+  return sections;
+}
+
+function versionSortKey(version: string): number[] {
+  return version.split('.').map(n => parseInt(n, 10));
+}
+
+async function main() {
+  const releases: Release[] =
+    await $`gh release ls --json createdAt,isDraft,isLatest,isPrerelease,name,publishedAt,tagName --repo gleam-lang/gleam --limit 1000 --order desc`.json();
+
+  const versions = new Set<string>();
+  for (const release of releases) {
+    const versionMatch = release.name.match(/^v(\d+\.\d+)/);
+    if (versionMatch && versionMatch[1]) {
+      versions.add(versionMatch[1]);
+    }
+  }
+
+  const sortedVersions = Array.from(versions).sort((a, b) => {
+    const aParts = versionSortKey(a);
+    const bParts = versionSortKey(b);
+    for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+      const aVal = aParts[i] ?? 0;
+      const bVal = bParts[i] ?? 0;
+      if (aVal !== bVal) return bVal - aVal;
+    }
+    return 0;
+  });
+
+  for (const baseVersion of sortedVersions) {
+    const changelogUrl = `https://raw.githubusercontent.com/gleam-lang/gleam/main/changelog/v${baseVersion}.md`;
+    const changelogRes = await fetch(changelogUrl);
+
+    if (!changelogRes.ok) {
+      continue;
+    }
+
+    const changelog = await changelogRes.text();
+    if (changelog === "") {
+      continue;
+    }
+
+    const sections = parseChangelog(changelog, baseVersion);
+
+    const result: ChangelogCounts = {
+      release: `v${baseVersion}.0`,
+      compiler: sections.compiler ?? 0,
+      formatter: sections.formatter ?? 0,
+      bug_fixes: sections.bug_fixes ?? 0,
+      build_tool: sections.build_tool ?? 0,
+      language_server: sections.language_server ?? 0,
+    };
+
+    console.log(result);
+  }
+}
+
+main().catch(console.error);
