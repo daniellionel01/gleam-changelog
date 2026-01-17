@@ -19,11 +19,36 @@ interface ChangelogCounts {
   language_server: number;
 }
 
-function parseChangelog(changelog: string, targetBaseVersion: string): Record<string, number> {
+function categorizeBugFix(text: string): string {
+  const lower = text.toLowerCase();
+
+  if (/language server|code action|completions?|completion|hover|diagnostic/.test(lower)) {
+    return "language_server";
+  }
+  if (/build tool|gleam (run|add|new|deps|update)|hex (?=api|repo)|dependencies?|manifest\.toml/.test(lower)) {
+    return "build_tool";
+  }
+  if (/formatter|formatting|indentation|trailing/.test(lower)) {
+    return "formatter";
+  }
+  return "compiler";
+}
+
+function parseChangelog(changelog: string, targetBaseVersion: string): {
+  sections: Record<string, number>;
+  bugFixAttribution: Record<string, number>;
+} {
   const sections: Record<string, number> = {
     compiler: 0,
     formatter: 0,
     bug_fixes: 0,
+    build_tool: 0,
+    language_server: 0,
+  };
+
+  const bugFixAttribution: Record<string, number> = {
+    compiler: 0,
+    formatter: 0,
     build_tool: 0,
     language_server: 0,
   };
@@ -47,6 +72,7 @@ function parseChangelog(changelog: string, targetBaseVersion: string): Record<st
   const lines = changelog.split('\n');
   let currentSection: string | null = null;
   let inTargetVersion = false;
+  let currentBugFixEntry: string[] = [];
 
   for (const line of lines) {
     const trimmedLine = line.trim();
@@ -56,6 +82,7 @@ function parseChangelog(changelog: string, targetBaseVersion: string): Record<st
       const fileBaseVersion = versionMatch[1];
       inTargetVersion = fileBaseVersion === targetBaseVersion;
       currentSection = null;
+      currentBugFixEntry = [];
       continue;
     }
 
@@ -70,16 +97,42 @@ function parseChangelog(changelog: string, targetBaseVersion: string): Record<st
     }
 
     if (matchedCategory) {
+      if (currentSection === "bug_fixes" && currentBugFixEntry.length > 0) {
+        const attribution = categorizeBugFix(currentBugFixEntry.join(" "));
+        bugFixAttribution[attribution] = (bugFixAttribution[attribution] ?? 0) + 1;
+        currentBugFixEntry = [];
+      }
       currentSection = categoryToSection[matchedCategory] ?? null;
       continue;
     }
 
-    if (currentSection && trimmedLine.startsWith('- ')) {
+    if (currentSection === "bug_fixes") {
+      if (trimmedLine.startsWith('- ')) {
+        if (currentBugFixEntry.length > 0) {
+          const attribution = categorizeBugFix(currentBugFixEntry.join(" "));
+          bugFixAttribution[attribution] = (bugFixAttribution[attribution] ?? 0) + 1;
+          currentBugFixEntry = [];
+        }
+        sections.bug_fixes = (sections.bug_fixes ?? 0) + 1;
+        currentBugFixEntry.push(trimmedLine);
+      } else if (currentBugFixEntry.length > 0 && (trimmedLine === "" || trimmedLine.startsWith('  '))) {
+        currentBugFixEntry.push(trimmedLine);
+      } else if (currentBugFixEntry.length > 0) {
+        const attribution = categorizeBugFix(currentBugFixEntry.join(" "));
+        bugFixAttribution[attribution] = (bugFixAttribution[attribution] ?? 0) + 1;
+        currentBugFixEntry = [];
+      }
+    } else if (currentSection && trimmedLine.startsWith('- ')) {
       sections[currentSection] = (sections[currentSection] ?? 0) + 1;
     }
   }
 
-  return sections;
+  if (currentSection === "bug_fixes" && currentBugFixEntry.length > 0) {
+    const attribution = categorizeBugFix(currentBugFixEntry.join(" "));
+    bugFixAttribution[attribution] = (bugFixAttribution[attribution] ?? 0) + 1;
+  }
+
+  return { sections, bugFixAttribution };
 }
 
 function versionSortKey(version: string): number[] {
@@ -109,6 +162,9 @@ async function main() {
     return 0;
   });
 
+  const results: ChangelogCounts[] = [];
+  const attributedResults: ChangelogCounts[] = [];
+
   for (const baseVersion of sortedVersions) {
     const changelogUrl = `https://raw.githubusercontent.com/gleam-lang/gleam/main/changelog/v${baseVersion}.md`;
     const changelogRes = await fetch(changelogUrl);
@@ -122,7 +178,7 @@ async function main() {
       continue;
     }
 
-    const sections = parseChangelog(changelog, baseVersion);
+    const { sections, bugFixAttribution } = parseChangelog(changelog, baseVersion);
 
     const result: ChangelogCounts = {
       release: `v${baseVersion}.0`,
@@ -133,7 +189,27 @@ async function main() {
       language_server: sections.language_server ?? 0,
     };
 
-    console.log(result);
+    const attributedResult: ChangelogCounts = {
+      release: `v${baseVersion}.0`,
+      compiler: (sections.compiler ?? 0) + (bugFixAttribution.compiler ?? 0),
+      formatter: (sections.formatter ?? 0) + (bugFixAttribution.formatter ?? 0),
+      bug_fixes: 0,
+      build_tool: (sections.build_tool ?? 0) + (bugFixAttribution.build_tool ?? 0),
+      language_server: (sections.language_server ?? 0) + (bugFixAttribution.language_server ?? 0),
+    };
+
+    results.push(result);
+    attributedResults.push(attributedResult);
+  }
+
+  console.log("=== STANDARD (non-attributed) ===");
+  for (const result of results) {
+    console.log(JSON.stringify(result, null, 2));
+  }
+
+  console.log("\n=== ATTRIBUTED (bug fixes distributed) ===");
+  for (const result of attributedResults) {
+    console.log(JSON.stringify(result, null, 2));
   }
 }
 
