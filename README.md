@@ -1,5 +1,7 @@
 # Gleam Changelog
 
+https://gleam.run/
+
 For no particular reason I broke down the changelogs by category (Bug Fix, Compiler, ...) for every release and visualised them.
 
 Disclaimer: this is totally arbitrary and does not consider the effort put into each changelog entry.
