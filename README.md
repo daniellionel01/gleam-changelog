@@ -6,6 +6,8 @@ Disclaimer: this is totally arbitrary and does not consider the effort put into 
 
 Nevertheless I think it's fun to look at. The team is definitely not slowing down!
 
+![Graph](./chart.png)
+
 ## How to run
 
 Software required to run this script:
@@ -33,9 +35,7 @@ Here are the colors for each category:
 - Language server: darker blue
 ```
 
-## Data so far
-
-### Standard (non-attributed)
+## Raw JSON Data
 
 ```json
 {
@@ -149,123 +149,6 @@ Here are the colors for each category:
   "bug_fixes": 23,
   "build_tool": 12,
   "language_server": 10
-}
-{
-  "release": "v1.1.0",
-  "compiler": 32,
-  "formatter": 15,
-  "bug_fixes": 0,
-  "build_tool": 27,
-  "language_server": 5
-}
-```
-
-### Attributed (bug fixes distributed to categories)
-
-```json
-{
-  "release": "v1.14.0",
-  "compiler": 37,
-  "formatter": 3,
-  "bug_fixes": 0,
-  "build_tool": 7,
-  "language_server": 17
-}
-{
-  "release": "v1.13.0",
-  "compiler": 37,
-  "formatter": 5,
-  "bug_fixes": 0,
-  "build_tool": 9,
-  "language_server": 25
-}
-{
-  "release": "v1.12.0",
-  "compiler": 33,
-  "formatter": 6,
-  "bug_fixes": 0,
-  "build_tool": 15,
-  "language_server": 12
-}
-{
-  "release": "v1.11.0",
-  "compiler": 43,
-  "formatter": 2,
-  "bug_fixes": 0,
-  "build_tool": 10,
-  "language_server": 18
-}
-{
-  "release": "v1.10.0",
-  "compiler": 22,
-  "formatter": 1,
-  "bug_fixes": 0,
-  "build_tool": 9,
-  "language_server": 19
-}
-{
-  "release": "v1.9.0",
-  "compiler": 13,
-  "formatter": 1,
-  "bug_fixes": 0,
-  "build_tool": 5,
-  "language_server": 9
-}
-{
-  "release": "v1.8.0",
-  "compiler": 11,
-  "formatter": 0,
-  "bug_fixes": 0,
-  "build_tool": 5,
-  "language_server": 9
-}
-{
-  "release": "v1.7.0",
-  "compiler": 29,
-  "formatter": 6,
-  "bug_fixes": 0,
-  "build_tool": 9,
-  "language_server": 9
-}
-{
-  "release": "v1.6.0",
-  "compiler": 31,
-  "formatter": 3,
-  "bug_fixes": 0,
-  "build_tool": 7,
-  "language_server": 6
-}
-{
-  "release": "v1.5.0",
-  "compiler": 31,
-  "formatter": 2,
-  "bug_fixes": 0,
-  "build_tool": 8,
-  "language_server": 7
-}
-{
-  "release": "v1.4.0",
-  "compiler": 19,
-  "formatter": 3,
-  "bug_fixes": 0,
-  "build_tool": 2,
-  "language_server": 11
-}
-{
-  "release": "v1.3.0",
-  "compiler": 21,
-  "formatter": 2,
-  "bug_fixes": 0,
-  "build_tool": 2,
-  "language_server": 6
-}
-{
-  "release": "v1.2.0",
-  "compiler": 27,
-  "formatter": 10,
-  "bug_fixes": 0,
-  "build_tool": 14,
-  "language_server": 12
 }
 {
   "release": "v1.1.0",
