@@ -8,7 +8,9 @@ Disclaimer: this is totally arbitrary and does not consider the effort put into 
 
 Nevertheless I think it's fun to look at. The team is definitely not slowing down!
 
-![Graph](./chart.png)
+![Bar Chart](./bar-chart.png)
+
+![Line Chart](./line-chart.png)
 
 ## How to run
 
