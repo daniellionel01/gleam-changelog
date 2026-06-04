@@ -43,6 +43,14 @@ Here are the colors for each category:
 
 ```json
 {
+  "release": "v1.17.0",
+  "compiler": 8,
+  "formatter": 0,
+  "bug_fixes": 8,
+  "build_tool":39,
+  "language_server": 13
+}
+{
   "release": "v1.16.0",
   "compiler": 9,
   "formatter": 2,
